@@ -11,8 +11,8 @@ Implementation fully depends on SimpleMembershipProvider; AspNetFormsAuth projec
 Table of contents
 -----------------
 
-1. [Features](#Features)
-2. [Authentication service API](#AuthenticationServiceApi)
+1. [Features](#features)
+2. [Authentication service API](#authentication-service-api)
 3. [Installation](#Installation)
 4. [Configuration](#Configuration)
 5. [Uninstallation](#Uninstallation)
