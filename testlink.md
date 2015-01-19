@@ -22,7 +22,6 @@ Table of contents
 9. [Troubleshooting](#Troubleshooting)
 
 
-<a id="Features"></a>
 Features
 --------
 
@@ -58,7 +57,6 @@ The user may use `SendPasswordResetToken` web service method (see below) **witho
 * The login form and service allow anonymous access (it is a standard forms authentication feature).
 
 
-<a id="AuthenticationServiceApi"></a>
 Authentication service API
 --------------------------
 
