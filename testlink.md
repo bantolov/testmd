@@ -43,14 +43,24 @@ to implement its own authentication or security mechanisms.
 
 * To create a new user, insert the record in the `Principal` entity.
 * To configure the user's permissions, enter the data in `PrincipalHasRole` or `Permission` entities.
-* To set the user's password, administrator may use `SetPassword` or `GeneratePasswordResetToken`
-  web service methods (see below). The user may use `ChangeMyPassword` later, if authenticated.
+* To set the user's password, the administrator may use [`SetPassword`](#setpassword)
+  or [`GeneratePasswordResetToken`](#generatepasswordresettoken)  web service methods (see below).
+  The user will later use [`ResetPassword`](#resetpassword) with the password reset token,
+  or [`ChangeMyPassword`](#changemypassword) when logged-in.
 
 ### Forgot password
 
-The user may use `SendPasswordResetToken` web service method (see below) **without authentication**.
-The implementation of sending the password (by SMS or email, e.g.) should be provided by an additional plugin
-(see [Implementing SendPasswordResetToken](#implementing-sendpasswordresettoken)).
+There are two recommended ways of implementing *forgot password* functionality with AspNetFormsAuth:
+
+* Option 1: An administrator (or a web application *with administrator privileges*) may call
+  [`GeneratePasswordResetToken`](#generatepasswordresettoken) web method to get the user's password reset token.
+  The administrator or the web application should then send the token to the user on its own.
+
+* Option 2: An end user that is not logged-in (or a web application *with no special privileges*) may call
+  [`SendPasswordResetToken`](#sendpasswordresettoken) web method. The Rhetos sever will generate
+  the password reset token and send it to the user. In order to use this method,
+  an implementation of sending the token (by SMS or email, e.g.) should be provided by an additional plugin
+  (see [Implementing SendPasswordResetToken](#implementing-sendpasswordresettoken)).
 
 ### Technical notes
 
@@ -66,7 +76,7 @@ The JSON service is available at URI `<rhetos server>/Resources/AspNetFormsAuth/
 
 ### Login
 
-* Interface: (string UserName, string Password, bool PersistCookie) -> bool
+* Interface: `(string UserName, string Password, bool PersistCookie) -> bool`
 * Example of the request data: `{"UserName":"myusername","Password":"mypassword","PersistCookie":false}`.
 * On successful log in, the server response will contain the standard authentication cookie.
   The client browser will automatically use the cookie for following requests.
@@ -80,18 +90,20 @@ The JSON service is available at URI `<rhetos server>/Resources/AspNetFormsAuth/
 
 ### SetPassword
 
-* Interface: (string UserName, string Password, bool IgnorePasswordStrengthPolicy) -> void
-* Sets or resets the given user's password.
-* Requires *SetPassword* [claim](#permissions-and-claims).
-  If IgnorePasswordStrengthPolicy property is set, *IgnorePasswordStrengthPolicy* [claim](#permissions-and-claims) is required.
+Sets or resets the given user's password.
+
+* Interface: `(string UserName, string Password, bool IgnorePasswordStrengthPolicy) -> void`
+* Requires "SetPassword" [claim](#permissions-and-claims).
+  If IgnorePasswordStrengthPolicy property is set, "IgnorePasswordStrengthPolicy" [claim](#permissions-and-claims) is required.
 * Response data is empty if the command is successful,
   an error message (string) with HTTP error code 400 if the password does not match the password strength policy,
   or an error message with HTTP error code 4* or 5* in case of any other error.
 
 ### ChangeMyPassword
 
-* Interface: (string OldPassword, string NewPassword) -> bool
-* Changes the current user's password.
+Changes the current user's password.
+
+* Interface: `(string OldPassword, string NewPassword) -> bool`
 * Response data is boolean *true* if the login is successful,
   *false* if the login and password does not match,
   an error message (string) with HTTP error code 400 if the password does not match the password strength policy,
@@ -99,35 +111,48 @@ The JSON service is available at URI `<rhetos server>/Resources/AspNetFormsAuth/
 
 ### UnlockUser
 
-* Interface: (string UserName) -> void
-* Reset the number of [failed login attempts](#maximum-failed-password-attempts). Response is empty.
-* Requires *UnlockUser* [claim](#permissions-and-claims).
+Reset the number of [failed login attempts](#maximum-failed-password-attempts).
+
+* Interface: `(string UserName) -> void`
+* Response is empty.
+* Requires "UnlockUser" [claim](#permissions-and-claims).
 
 ### GeneratePasswordResetToken
 
-* Interface: (string UserName, int TokenExpirationInMinutesFromNow) -> string
-* Generates a password reset token that can be send to the user by email.
-* Use it to implement *forgot password* web page (see [MSDN](http://msdn.microsoft.com/en-us/library/webmatrix.webdata.websecurity.generatepasswordresettoken.aspx))
-  or to create a user account without initial password and let a user choose it.
-* Requires *GeneratePasswordResetToken* [claim](#permissions-and-claims).
-* If TokenExpirationInMinutesFromNow is not set (or set to 0), the token will expire in 24 hours.
+Generates a password reset token.
+
+* Interface: `(string UserName, int TokenExpirationInMinutesFromNow) -> string`
+* This method is typically called by an administrator or a web application with administrator privileges
+  in order to create a user account without initial password and let a user choose it, or to implement forgot-password functionality.
+* To implement forgot-password functionality *without* using administrator privileges in web application,
+  use [`SendPasswordResetToken`](#sendpasswordresettoken) method instead (see [Forgot password](#forgot-password)).
+* Requires "GeneratePasswordResetToken" [claim](#permissions-and-claims).
+* If TokenExpirationInMinutesFromNow parameter is not set (or set to 0), the token will expire in 24 hours.
 
 ### SendPasswordResetToken
 
-* Interface: (string UserName, Dictionary<string, string> AdditionalClientInfo) -> void
-* Generates a password reset token (see [GeneratePasswordResetToken](#generatepasswordresettoken)) and sends it to the user.
+Generates a password reset token and sends it to the user.
+
+* Interface: `(string UserName, Dictionary<string, string> AdditionalClientInfo) -> void`
+* When using this method there is no need to directly call [`GeneratePasswordResetToken`](#generatepasswordresettoken)
+  method (see [Forgot password](#forgot-password)).
 * The method does not require user authentication.
-* **NOTE:** *AspNetFormsAuth* package **does not contain** any implementation of sending the token (by SMS or email, e.g.).
-  The implementation must be provided by an additional plugin. For example,
-  adding [SimpleSPRTEmail](https://github.com/Rhetos/SimpleSPRTEmail) package to the Rhetos server will allow sending the token by email.
-* See [Implementing SendPasswordResetToken](#implementing-sendpasswordresettoken) for developing specific implementations.    
-* Use `AspNetFormsAuth.SendPasswordResetToken.ExpirationInMinutes` appSettings key in `web.config` to set the token expiration timeout. Default value is 1440 (24 hours).
+* **NOTE:** *AspNetFormsAuth* package **does not contain** any implementation of sending
+  the token (by SMS or email, e.g.).
+  The implementation must be provided by an additional plugin. For example:
+    * Use the [SimpleSPRTEmail](https://github.com/Rhetos/SimpleSPRTEmail) plugin package for sending token by email,
+    * or follow [Implementing SendPasswordResetToken](#implementing-sendpasswordresettoken) to implement a different sending method.
+* Use `AspNetFormsAuth.SendPasswordResetToken.ExpirationInMinutes` appSettings key in `web.config` to set the token expiration timeout.
+  Default value is 1440 minutes (24 hours).
+  For example: `<add key="AspNetFormsAuth.SendPasswordResetToken.ExpirationInMinutes" value="60" />`.
 
 ### ResetPassword
 
-* Interface: (string PasswordResetToken, string NewPassword) -> bool
-* Allows a user to set its password (initial password or forgotten).
-* See `GeneratePasswordResetToken` method for *PasswordResetToken*.   
+Allows a user to set the initial password or reset the forgotten password, using the token he received previously.
+
+* Interface: `(string PasswordResetToken, string NewPassword) -> bool`
+* See `GeneratePasswordResetToken` method for *PasswordResetToken*.
+* The method does not require user authentication.
 * Response data is boolean *true* if the password change is successful,
   *false* if the token is invalid or expired,
   or an error message (string) with HTTP error code 4* or 5* in case of any other error.
@@ -139,9 +164,10 @@ Prerequisites:
 
 * AspNetFormsAuth cannot be deployed together with **SimpleWindowsAuth**.
 
-Before or after deploying the AspNetFormsAuth packages, please make the following changes to the web site configuration, in order for forms authentication to work.
+Before or after deploying the AspNetFormsAuth packages, please make the following changes to the web site configuration,
+in order for forms authentication to work.
 
-#### 1. Modify Web.config
+### 1. Modify Web.config
 
 1. Comment out (or delete) the `security mode="TransportCredentialOnly` elements in all bindings.
 2. Remove the `<authentication mode="Windows" />` element.
@@ -159,16 +185,20 @@ Before or after deploying the AspNetFormsAuth packages, please make the followin
 	      <deny users="?" />
 	    </authorization>
 
-#### 2. Configure IIS
+### 2. Configure IIS
 
 1. Start IIS Manager -> Select the web site -> Open "Authentication" feature.
-2. On the Authentication page **enable** *Anonymous Authentication* and *Forms Authentication*, **disable** *Windows Authentication* and every other.
+2. On the Authentication page **enable** *Anonymous Authentication* and *Forms Authentication*,
+   **disable** *Windows Authentication* and every other.
 
-#### 3. Configure IIS Express
+### 3. Configure IIS Express
 
 *(Only if using IIS Express instead of IIS server)*
 
-If using IIS Express, after adding AspNetFormsAuth package to `ApplyPackages.txt` execute `SetupRhetosServer.bat` utility in Rhetos server's folder to automatically configure `IISExpress.config`, or manually apply the following lines in IISExpress configuration file inside `system.webServer` element or inside `location / system.webServer` (usually at the end of the file):
+If using IIS Express, after adding AspNetFormsAuth package to `ApplyPackages.txt` execute `SetupRhetosServer.bat`
+utility in Rhetos server's folder to automatically configure `IISExpress.config`,
+or manually apply the following lines in IISExpress configuration file inside `system.webServer` element
+or inside `location / system.webServer` (usually at the end of the file):
 
 	<security>
 	    <authentication>
@@ -177,48 +207,54 @@ If using IIS Express, after adding AspNetFormsAuth package to `ApplyPackages.txt
 	    </authentication>
 	</security>
 
-#### 4. Set up HTTPS
+### 4. Set up HTTPS
 
 HTTPS (or any other) secure transport protocol **should always be enforced** when using forms authentication.
 This is necessary because in forms authentication the password is submitted as a plain text.
 
 At least the services inside `/Resources/AspNetFormsAuth` path must use HTTPS to protect user's password.
 
-Consider using a [free SSL certificate](https://www.google.hr/search?q=free+SSL+certificate) (search the web for the providers) in development or QA environment.
+Consider using a [free SSL certificate](https://www.google.hr/search?q=free+SSL+certificate) (search the web for the providers)
+in development or QA environment.
 
 
 ## Configuration
 
-#### "admin" user
+### "admin" user
 
-`DeployPackages.exe`, when deploying the AspNetFormsAuth packages, automatically creates the *admin* user account and *SecurityAdministrator* role, adds the account to the role and gives it necessary permissions (claims) for all authentication service methods.
+`DeployPackages.exe`, when deploying the AspNetFormsAuth packages, automatically creates the *admin* user account
+and *SecurityAdministrator* role, adds the account to the role and gives it necessary permissions (claims) for all
+authentication service methods.
 
 1. After deployment, **run the utility** `\bin\Plugins\AdminSetup.exe` to initialize the *admin* user's password.
 
-#### Permissions and claims
+### Permissions and claims
 
 All claims related to the authentication service have resource="*AspNetFormsAuth.AuthenticationService*".
 [Admin user](#admin-user) has all the necessary permissions (claims) for all authentication service methods.
 
-#### Maximum failed password attempts
+### Maximum failed password attempts
 
-Use entity *Commmon.AspNetFormsAuthPasswordAttemptsLimit* (*MaxInvalidPasswordAttempts*, *TimeoutInSeconds*) to configure automatic account locking when a number of failed password attempts is reached.
+Use entity *Commmon.AspNetFormsAuthPasswordAttemptsLimit* (*MaxInvalidPasswordAttempts*, *TimeoutInSeconds*)
+to configure automatic account locking when a number of failed password attempts is reached.
 
 * When *MaxInvalidPasswordAttempts* limit is passed, the user's account is temporarily locked.
-* If *TimeoutInSeconds* is set, user's account will be temporarily locked until the specified time period has passed. If the value is not set or 0, the account will be locked permanently.
-* Administrator may use [UnlockUser](#unlockuser) authentication service method to unlock the account, or wait for *TimeoutInSeconds*.
+* If *TimeoutInSeconds* is set, user's account will be temporarily locked until the specified time period has passed.
+  If the value is not set or 0, the account will be locked permanently.
+* Administrator may use [`UnlockUser`](#unlockuser) method to unlock the account, or wait for *TimeoutInSeconds*.
 * Multiple limits may be entered. An example with two entries:
 
 > After 3 failed attempts, the account is temporarily locked for 120 seconds;
 > after 10 failed attempts, the account is locked until *admin* unlocks it manually (timeout=0).
 
-#### Password strength policy
+### Password strength policy
 
 Use entity *Common.AspNetFormsAuthPasswordStrength* (*RegularExpression*, *RuleDescription*) to configure the policy.
 
 * A new password must pass all the rules in *Common.AspNetFormsAuthPasswordStrength*.
 * *RuleDescription* is uses as an error message to the user if the new password breaks the policy.
-* When administrator executes [SetPassword](#setpassword) authorization service method, the property *IgnorePasswordStrengthPolicy* may be used to avoid the policy.
+* When administrator executes [`SetPassword`](#setpassword) method, the property *IgnorePasswordStrengthPolicy*
+  may be used to avoid the policy.
 
 Examples:
 
@@ -235,7 +271,7 @@ RegularExpression|RuleDescription
 
 When returning Rhetos server from Forms Authentication back to **Windows Authentication**, the following configuration changes should be done:
 
-#### Modify Web.config
+### Modify Web.config
 
 1. Add (or uncomment) the following element inside all `<binding ...>` elements:
 
@@ -259,7 +295,7 @@ When returning Rhetos server from Forms Authentication back to **Windows Authent
 
 3. Inside `<system.web>` add the `<authentication mode="Windows" />` element.
 
-#### Configure IIS
+### Configure IIS
 
 1. Start IIS Manager -> Select the web site -> Open "Authentication" feature.
 2. On the Authentication page **disable** *Anonymous Authentication* and *Forms Authentication*, **enable** *Windows Authentication*.
@@ -313,9 +349,19 @@ To allow user to stay logged in after longer time of inactivity, add standard AS
 
 ## Implementing SendPasswordResetToken
 
-A sample implementation is available at [https://github.com/Rhetos/SimpleSPRTEmail](https://github.com/Rhetos/SimpleSPRTEmail).
+In order to use [`SendPasswordResetToken`](#sendpasswordresettoken) web method (see also [Forgot password](#forgot-password)),
+an additional plugin must be provided that sends the token to the user (by SMS or email, e.g.).
 
-A package that implements a method of sending the token to the user (by SMS or email, e.g.) must contain a class that implements the `Rhetos.AspNetFormsAuth.ISendPasswordResetToken` interfaces from `Rhetos.AspNetFormsAuth.Interfaces.dll`. The class must use `Export` attribute to register the plugin implementation. For example:
+* A sample implementation is available at [https://github.com/Rhetos/SimpleSPRTEmail](https://github.com/Rhetos/SimpleSPRTEmail).
+  This plugin package may be used for sending simple emails.
+
+### Custom implementation
+
+In order to implement a custom method of sending the token to the user (by SMS or email, e.g.),
+create a Rhetos plugin package with a class that implements the `Rhetos.AspNetFormsAuth.ISendPasswordResetToken` interface
+from `Rhetos.AspNetFormsAuth.Interfaces.dll`.
+The class must use `Export` attribute to register the plugin implementation.
+For example:
 
 	[Export(typeof(ISendPasswordResetToken))]
     public class EmailSender : ISendPasswordResetToken
@@ -323,22 +369,15 @@ A package that implements a method of sending the token to the user (by SMS or e
 		...
 	}
 
-The `AdditionalClientInfo` parameter of web service method `/SendPasswordResetToken` will be provided to the implementation function. The parameter may contain answers to security questions, preferred method of communication or any similar user provided information required by the `ISendPasswordResetToken` implementation.
+The `AdditionalClientInfo` parameter of web service method `/SendPasswordResetToken` will be provided to the implementation function.
+The parameter may contain answers to security questions, preferred method of communication or any similar user provided information
+required by the `ISendPasswordResetToken` implementation.
 
-### Security isses with error handling
-
-The implementation class may throw a `Rhetos.UserException` or a `Rhetos.ClientException` to provide an error message to the client, but use it with caution, or better avoid it: The `SendPasswordResetToken` web service method allows **anonymous access**, so providing any error information to the client might be a security issue.
+The implementation class may throw a `Rhetos.UserException` or a `Rhetos.ClientException` to provide an error message to the client,
+but use it with caution, or better avoid it: The `SendPasswordResetToken` web service method allows **anonymous access**,
+so providing any error information to the client might be a security issue.
 
 Any other exception (`Rhetos.FrameworkException`, e.g.) will only be logged on the server, but no error will be sent to the client.
-
-### Password reset token expiration time
-
-Use `AspNetFormsAuth.SendPasswordResetToken.ExpirationInMinutes` appSettings key in `web.config` to set the token expiration timeout. Default value is 1440 (24 hours). An example:
-
-    <appSettings>
-      <add key="AspNetFormsAuth.SendPasswordResetToken.ExpirationInMinutes" value="60" />
-    </appSettings>
-
 
 ## Troubleshooting
 
