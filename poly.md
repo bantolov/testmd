@@ -5,9 +5,9 @@ Table of contents:
 3. [Referencing or extending a polymorphic entity](#referencing-or-extending-a-polymorphic-entity)
 4. [Multiple interface implementations](#multiple-interface-implementations)
 5. [Property implementation with subquery](#property-implementation-with-subquery)
-6. [Limit the implementation with filter (where)](#limit-the-implementation-with-filter--where-)
-5. [Subtype implementation using SQL query](#subtype-implementation-using-sql-query)
-7. [Writing efficient queries from client application](#writing-efficient-queries-from-client-application)
+6. [Limit the implementation with filter (where)](#limit-the-implementation-with-filter-where)
+7. [Subtype implementation using SQL query](#subtype-implementation-using-sql-query)
+8. [Writing efficient queries from client application](#writing-efficient-queries-from-client-application)
 
 ## Essential info
 
