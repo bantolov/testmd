@@ -80,9 +80,25 @@ The redundant IDs are automatically updated when inserting or deleting the subty
 ## Multiple interface implementations
 
 An entity may implement multiple interfaces.
-It can even implement the same interface multiple times, using additional string parameter ImplementationName to distinguish the implementations.
+It can even implement the same interface multiple times, using additional string parameter *ImplementationName* to distinguish the implementations.
 
-For example, the MoneyTransfer record may be implemented as two money transactions: subtracting from one account and adding to the other account.
+For example, the `TransferMoney` entity record may be implemented as two money transactions: subtracting from one account and adding to the other account.
+
+    Entity TransferMoney
+    {
+        ShortString From;
+        ShortString To;
+        Money Amount;
+        
+        Is Demo.MoneyTransaction; // Adding money using the 'Amount' value.
+        
+        Is Demo.MoneyTransaction 'Subtract'
+        {
+            Implements Demo.MoneyTransaction.Amount '-Amount';
+        }
+    }
+
+See the generated SQL view `Demo.MoneyTransaction` to check that a `TransferMoney` record is included twice in the view.
 
 ## Property implementation with subquery
 
