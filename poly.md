@@ -82,7 +82,7 @@ The redundant IDs are automatically updated when inserting or deleting the subty
 An entity may implement multiple interfaces.
 It can even implement the same interface multiple times, using additional string parameter *ImplementationName* to distinguish the implementations.
 
-For example, the `TransferMoney` entity record may be implemented as two money transactions: subtracting from one account and adding to the other account.
+For example, the `TransferMoney` entity record may represent two money transactions: subtracting from one account and adding to the other account.
 
     Entity TransferMoney
     {
