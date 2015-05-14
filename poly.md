@@ -1,13 +1,8 @@
-Table of contents:
+# title
 
-1. [Essential info](#essential-info)
-2. [Usage](#usage)
-3. [Referencing or extending a polymorphic entity](#referencing-or-extending-a-polymorphic-entity)
-4. [Multiple interface implementations](#multiple-interface-implementations)
-5. [Property implementation with subquery](#property-implementation-with-subquery)
-6. [Limit the implementation with filter (where)](#limit-the-implementation-with-filter-where)
-7. [Subtype implementation using SQL query](#subtype-implementation-using-sql-query)
-8. [Writing efficient queries from client application](#writing-efficient-queries-from-client-application)
+
+.. contents::
+  :local:
 
 ## Essential info
 
