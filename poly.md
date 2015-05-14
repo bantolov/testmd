@@ -1,10 +1,13 @@
-# title
+==========
+title
+==============
 
 
 .. contents::
   :local:
 
-## Essential info
+Essential info
+==============
 
 Polymorphic concept is intended for implementing the application design pattern where multiple entities share common interface for reading data (defined as a list of common properties).
 
