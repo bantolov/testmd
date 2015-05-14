@@ -2,7 +2,6 @@
 title
 ==============
 
-
 .. contents::
   :local:
 
